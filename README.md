@@ -25,20 +25,20 @@ func New(fillInterval time.Duration, capacity int64) *TokenBucket
 New returns a new token bucket that fills at the rate of one token every
 fillInterval, up to the given maximum capacity. Both arguments must be positive.
 
-#### func (*TokenBucket) Get
+#### func (*TokenBucket) Take
 
 ```go
-func (tb *TokenBucket) Get(count int64)
+func (tb *TokenBucket) Take(count int64) time.Duration
 ```
-Get gets count tokens from the bucket, waiting until the tokens are available.
-
-#### func (*TokenBucket) GetNB
-
-```go
-func (tb *TokenBucket) GetNB(count int64) time.Duration
-```
-GetNB gets count tokens from the bucket without blocking. It returns the time to
-wait until the tokens are actually available.
+Take takes count tokens from the bucket without blocking. It returns the time
+that the caller should wait until the tokens are actually available.
 
 Note that if the request is irrevocable - there is no way to return tokens to
 the bucket once this method commits us to taking them.
+
+#### func (*TokenBucket) Wait
+
+```go
+func (tb *TokenBucket) Wait(count int64)
+```
+Wait takes count tokens from the bucket, waiting until they are available.
