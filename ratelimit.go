@@ -49,8 +49,8 @@ func (tb *TokenBucket) Get(count int64) {
 }
 
 // GetNB gets count tokens from the bucket without
-// blocking. It returns the time to wait until the
-// tokens are actually available.
+// blocking. It returns the time that the caller should
+// wait until the tokens are actually available.
 //
 // Note that if the request is irrevocable - there
 // is no way to return tokens to the bucket once
