@@ -104,7 +104,7 @@ func (rateLimitSuite) TestRateLimit(c *gc.C) {
 	for i, test := range rateLimitTests {
 		tb := New(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
-			d := tb.getNB(tb.startTime.Add(req.time), req.count)
+			d := tb.take(tb.startTime.Add(req.time), req.count)
 			if d != req.expectWait {
 				c.Fatalf("test %d.%d, %s, got %v want %v", i, j, test.about, d, req.expectWait)
 			}

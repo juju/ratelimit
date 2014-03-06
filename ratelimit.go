@@ -40,28 +40,28 @@ func New(fillInterval time.Duration, capacity int64) *TokenBucket {
 	}
 }
 
-// Get gets count tokens from the bucket, waiting
-// until the tokens are available.
-func (tb *TokenBucket) Get(count int64) {
-	if d := tb.GetNB(count); d > 0 {
+// Wait takes count tokens from the bucket,
+// waiting until they are available.
+func (tb *TokenBucket) Wait(count int64) {
+	if d := tb.Take(count); d > 0 {
 		time.Sleep(d)
 	}
 }
 
-// GetNB gets count tokens from the bucket without
+// Take takes count tokens from the bucket without
 // blocking. It returns the time that the caller should
 // wait until the tokens are actually available.
 //
 // Note that if the request is irrevocable - there
 // is no way to return tokens to the bucket once
 // this method commits us to taking them.
-func (tb *TokenBucket) GetNB(count int64) time.Duration {
-	return tb.getNB(time.Now(), count)
+func (tb *TokenBucket) Take(count int64) time.Duration {
+	return tb.take(time.Now(), count)
 }
 
-// getNB is the internal version of GetNB - it takes
+// take is the internal version of Take - it takes
 // the current time as an argument to enable easy testing.
-func (tb *TokenBucket) getNB(now time.Time, count int64) time.Duration {
+func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	if count <= 0 {
 		return 0
 	}
