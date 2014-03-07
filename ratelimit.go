@@ -28,7 +28,7 @@ type TokenBucket struct {
 // New returns a new token bucket that fills at the
 // rate of one token every fillInterval, up to the given
 // maximum capacity. Both arguments must be
-// positive.
+// positive. The bucket is initially full.
 func New(fillInterval time.Duration, capacity int64) *TokenBucket {
 	if fillInterval <= 0 {
 		panic("token bucket fill interval is not > 0")
@@ -39,6 +39,7 @@ func New(fillInterval time.Duration, capacity int64) *TokenBucket {
 	return &TokenBucket{
 		startTime:    time.Now(),
 		capacity:     capacity,
+		avail:        capacity,
 		fillInterval: fillInterval,
 	}
 }
@@ -77,7 +78,7 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	if tb.avail >= 0 {
 		return 0
 	}
-	endTick := currentTick-tb.avail
+	endTick := currentTick - tb.avail
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
 	return endTime.Sub(now)
 }
