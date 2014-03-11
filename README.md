@@ -24,6 +24,7 @@ func New(fillInterval time.Duration, capacity int64) *TokenBucket
 ```
 New returns a new token bucket that fills at the rate of one token every
 fillInterval, up to the given maximum capacity. Both arguments must be positive.
+The bucket is initially full.
 
 #### func (*TokenBucket) Take
 
