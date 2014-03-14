@@ -104,7 +104,7 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	if tb.avail >= 0 {
 		return 0
 	}
-	endTick := currentTick - tb.avail
+	endTick := currentTick + (-tb.avail + tb.quantum + 1) / tb.quantum
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
 	return endTime.Sub(now)
 }
@@ -117,7 +117,7 @@ func (tb *TokenBucket) adjust(now time.Time) (currentTick int64) {
 	if tb.avail >= tb.capacity {
 		return
 	}
-	tb.avail += currentTick - tb.availTick
+	tb.avail += (currentTick - tb.availTick) * tb.quantum
 	if tb.avail > tb.capacity {
 		tb.avail = tb.capacity
 	}
