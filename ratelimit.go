@@ -63,10 +63,9 @@ func (tb *TokenBucket) Take(count int64) time.Duration {
 	return tb.take(time.Now(), count)
 }
 
-// TryTake takes up to count tokens from the
-// bucket if they are immediately available.
-// It returns the number of tokens removed,
-// or zero if there are no available tokens.
+// TryTake takes up to count immediately available
+// tokens from the bucket. It returns the number of tokens removed,
+// or zero if there are no available tokens. It does not block.
 func (tb *TokenBucket) TryTake(count int64) int64 {
 	return tb.tryTake(time.Now(), count)
 }
@@ -79,6 +78,7 @@ func (tb *TokenBucket) tryTake(now time.Time, count int64) int64 {
 	}
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
+
 	tb.adjust(now)
 	if tb.avail <= 0 {
 		return 0
@@ -98,8 +98,8 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	}
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
-	currentTick := tb.adjust(now)
 
+	currentTick := tb.adjust(now)
 	tb.avail -= count
 	if tb.avail >= 0 {
 		return 0
