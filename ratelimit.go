@@ -63,6 +63,33 @@ func (tb *TokenBucket) Take(count int64) time.Duration {
 	return tb.take(time.Now(), count)
 }
 
+// TryTake takes up to count tokens from the
+// bucket if they are immediately available.
+// It returns the number of tokens removed,
+// or zero if there are no available tokens.
+func (tb *TokenBucket) TryTake(count int64) int64 {
+	return tb.tryTake(time.Now(), count)
+}
+
+// tryTake is the internal version of TryTake - it takes
+// the current time as an argument to enable easy testing.
+func (tb *TokenBucket) tryTake(now time.Time, count int64) int64 {
+	if count <= 0 {
+		return 0
+	}
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+	tb.adjust(now)
+	if tb.avail <= 0 {
+		return 0
+	}
+	if count > tb.avail {
+		count = tb.avail
+	}
+	tb.avail -= count
+	return count
+}
+
 // take is the internal version of Take - it takes
 // the current time as an argument to enable easy testing.
 func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
@@ -71,8 +98,7 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	}
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
-	currentTick := int64(now.Sub(tb.startTime) / tb.fillInterval)
-	tb.adjust(currentTick)
+	currentTick := tb.adjust(now)
 
 	tb.avail -= count
 	if tb.avail >= 0 {
@@ -84,8 +110,10 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 }
 
 // adjust adjusts the current bucket capacity based
-// on the current tick.
-func (tb *TokenBucket) adjust(currentTick int64) {
+// on the current time. It returns the current tick.
+func (tb *TokenBucket) adjust(now time.Time) (currentTick int64) {
+	currentTick = int64(now.Sub(tb.startTime) / tb.fillInterval)
+
 	if tb.avail >= tb.capacity {
 		return
 	}
@@ -94,4 +122,5 @@ func (tb *TokenBucket) adjust(currentTick int64) {
 		tb.avail = tb.capacity
 	}
 	tb.availTick = currentTick
+	return
 }
