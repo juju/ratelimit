@@ -23,7 +23,7 @@ type Bucket struct {
 	// The mutex guards the fields following it.
 	mu sync.Mutex
 
-	// avail hold the number of available tokens
+	// avail holds the number of available tokens
 	// in the bucket, as of availTick ticks from startTime.
 	avail     int64
 	availTick int64
