@@ -4,13 +4,13 @@ import "io"
 
 type reader struct {
 	r      io.Reader
-	bucket *TokenBucket
+	bucket *Bucket
 }
 
 // Reader returns a reader that is rate limited by
 // the given token bucket. Each token in the bucket
 // represents one byte.
-func Reader(r io.Reader, bucket *TokenBucket) io.Reader {
+func Reader(r io.Reader, bucket *Bucket) io.Reader {
 	return &reader{
 		r:      r,
 		bucket: bucket,
@@ -28,13 +28,13 @@ func (r *reader) Read(buf []byte) (int, error) {
 
 type writer struct {
 	w      io.Writer
-	bucket *TokenBucket
+	bucket *Bucket
 }
 
 // Writer returns a reader that is rate limited by
 // the given token bucket. Each token in the bucket
 // represents one byte.
-func Writer(w io.Writer, bucket *TokenBucket) io.Writer {
+func Writer(w io.Writer, bucket *Bucket) io.Writer {
 	return &writer{
 		w:      w,
 		bucket: bucket,

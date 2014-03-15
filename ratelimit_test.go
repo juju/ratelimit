@@ -126,7 +126,7 @@ var takeTests = []struct {
 
 func (rateLimitSuite) TestTake(c *gc.C) {
 	for i, test := range takeTests {
-		tb := New(test.fillInterval, test.capacity)
+		tb := NewBucket(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
 			d := tb.take(tb.startTime.Add(req.time), req.count)
 			if d != req.expectWait {
@@ -223,7 +223,7 @@ var takeAvailableTests = []struct {
 
 func (rateLimitSuite) TestTakeAvailable(c *gc.C) {
 	for i, test := range takeAvailableTests {
-		tb := New(test.fillInterval, test.capacity)
+		tb := NewBucket(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
 			d := tb.takeAvailable(tb.startTime.Add(req.time), req.count)
 			if d != req.expect {
@@ -234,10 +234,10 @@ func (rateLimitSuite) TestTakeAvailable(c *gc.C) {
 }
 
 func (rateLimitSuite) TestPanics(c *gc.C) {
-	c.Assert(func() { New(0, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
-	c.Assert(func() { New(-2, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
-	c.Assert(func() { New(1, 0) }, gc.PanicMatches, "token bucket capacity is not > 0")
-	c.Assert(func() { New(1, -2) }, gc.PanicMatches, "token bucket capacity is not > 0")
+	c.Assert(func() { NewBucket(0, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
+	c.Assert(func() { NewBucket(-2, 1) }, gc.PanicMatches, "token bucket fill interval is not > 0")
+	c.Assert(func() { NewBucket(1, 0) }, gc.PanicMatches, "token bucket capacity is not > 0")
+	c.Assert(func() { NewBucket(1, -2) }, gc.PanicMatches, "token bucket capacity is not > 0")
 }
 
 func isCloseTo(x, y, tolerance float64) bool {
@@ -245,22 +245,22 @@ func isCloseTo(x, y, tolerance float64) bool {
 }
 
 func (rateLimitSuite) TestRate(c *gc.C) {
-	tb := New(1, 1)
+	tb := NewBucket(1, 1)
 	if !isCloseTo(tb.Rate(), 1e9, 0.00001) {
 		c.Fatalf("got %v want 1e9", tb.Rate())
 	}
-	tb = New(2*time.Second, 1)
+	tb = NewBucket(2*time.Second, 1)
 	if !isCloseTo(tb.Rate(), 0.5, 0.00001) {
 		c.Fatalf("got %v want 0.5", tb.Rate())
 	}
-	tb = newWithQuantum(100*time.Millisecond, 1, 5)
+	tb = newBucketWithQuantum(100*time.Millisecond, 1, 5)
 	if !isCloseTo(tb.Rate(), 50, 0.00001) {
 		c.Fatalf("got %v want 50", tb.Rate())
 	}
 }
 
 func checkRate(c *gc.C, rate float64) {
-	tb := NewWithRate(rate, 1<<62)
+	tb := NewBucketWithRate(rate, 1<<62)
 	if !isCloseTo(tb.Rate(), rate, rateMargin) {
 		c.Fatalf("got %g want %v", tb.Rate(), rate)
 	}
@@ -281,7 +281,7 @@ func checkRate(c *gc.C, rate float64) {
 
 func (rateLimitSuite) TestNewWithRate(c *gc.C) {
 	if !testing.Short() {
-		for rate := float64(1); rate < 1e6; rate++ {
+		for rate := float64(1); rate < 1e6; rate += 2 {
 			checkRate(c, rate)
 		}
 	}
@@ -302,7 +302,7 @@ func (rateLimitSuite) TestNewWithRate(c *gc.C) {
 }
 
 func BenchmarkWait(b *testing.B) {
-	tb := New(1, 16*1024)
+	tb := NewBucket(1, 16*1024)
 	for i := b.N - 1; i >= 0; i-- {
 		tb.Wait(1)
 	}
