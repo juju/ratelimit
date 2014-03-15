@@ -7,6 +7,22 @@ http://en.wikipedia.org/wiki/Token_bucket.
 
 ## Usage
 
+#### func  Reader
+
+```go
+func Reader(r io.Reader, bucket *TokenBucket) io.Reader
+```
+Reader returns a reader that is rate limited by the given token bucket. Each
+token in the bucket represents one byte.
+
+#### func  Writer
+
+```go
+func Writer(w io.Writer, bucket *TokenBucket) io.Writer
+```
+Writer returns a reader that is rate limited by the given token bucket. Each
+token in the bucket represents one byte.
+
 #### type TokenBucket
 
 ```go
@@ -25,6 +41,23 @@ func New(fillInterval time.Duration, capacity int64) *TokenBucket
 New returns a new token bucket that fills at the rate of one token every
 fillInterval, up to the given maximum capacity. Both arguments must be positive.
 The bucket is initially full.
+
+#### func  NewWithRate
+
+```go
+func NewWithRate(rate float64, capacity int64) *TokenBucket
+```
+NewRate returns a token bucket that fills the bucket at the rate of rate tokens
+per second up to the given maximum capacity. Because of limited clock
+resolution, at high rates, the actual rate may be up to 1% different from the
+specified rate.
+
+#### func (*TokenBucket) Rate
+
+```go
+func (tb *TokenBucket) Rate() float64
+```
+Rate returns the fill rate of the bucket, in tokens per second.
 
 #### func (*TokenBucket) Take
 
