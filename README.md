@@ -37,12 +37,12 @@ that the caller should wait until the tokens are actually available.
 Note that if the request is irrevocable - there is no way to return tokens to
 the bucket once this method commits us to taking them.
 
-#### func (*TokenBucket) TryTake
+#### func (*TokenBucket) TakeAvailable
 
 ```go
-func (tb *TokenBucket) TryTake(count int64) int64
+func (tb *TokenBucket) TakeAvailable(count int64) int64
 ```
-TryTake takes up to count immediately available tokens from the bucket. It
+TakeAvailable takes up to count immediately available tokens from the bucket. It
 returns the number of tokens removed, or zero if there are no available tokens.
 It does not block.
 

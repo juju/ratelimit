@@ -136,22 +136,22 @@ func (rateLimitSuite) TestTake(c *gc.C) {
 	}
 }
 
-type tryTakeReq struct {
+type takeAvailableReq struct {
 	time   time.Duration
 	count  int64
 	expect int64
 }
 
-var tryTakeTests = []struct {
+var takeAvailableTests = []struct {
 	about        string
 	fillInterval time.Duration
 	capacity     int64
-	reqs         []tryTakeReq
+	reqs         []takeAvailableReq
 }{{
 	about:        "serial requests",
 	fillInterval: 250 * time.Millisecond,
 	capacity:     10,
-	reqs: []tryTakeReq{{
+	reqs: []takeAvailableReq{{
 		time:   0,
 		count:  0,
 		expect: 0,
@@ -172,7 +172,7 @@ var tryTakeTests = []struct {
 	about:        "concurrent requests",
 	fillInterval: 250 * time.Millisecond,
 	capacity:     10,
-	reqs: []tryTakeReq{{
+	reqs: []takeAvailableReq{{
 		time:   0,
 		count:  5,
 		expect: 5,
@@ -193,7 +193,7 @@ var tryTakeTests = []struct {
 	about:        "more than capacity",
 	fillInterval: 1 * time.Millisecond,
 	capacity:     10,
-	reqs: []tryTakeReq{{
+	reqs: []takeAvailableReq{{
 		time:   0,
 		count:  10,
 		expect: 10,
@@ -206,7 +206,7 @@ var tryTakeTests = []struct {
 	about:        "within capacity",
 	fillInterval: 10 * time.Millisecond,
 	capacity:     5,
-	reqs: []tryTakeReq{{
+	reqs: []takeAvailableReq{{
 		time:   0,
 		count:  5,
 		expect: 5,
@@ -221,11 +221,11 @@ var tryTakeTests = []struct {
 	}},
 }}
 
-func (rateLimitSuite) TestTryTake(c *gc.C) {
-	for i, test := range tryTakeTests {
+func (rateLimitSuite) TestTakeAvailable(c *gc.C) {
+	for i, test := range takeAvailableTests {
 		tb := New(test.fillInterval, test.capacity)
 		for j, req := range test.reqs {
-			d := tb.tryTake(tb.startTime.Add(req.time), req.count)
+			d := tb.takeAvailable(tb.startTime.Add(req.time), req.count)
 			if d != req.expect {
 				c.Fatalf("test %d.%d, %s, got %v want %v", i, j, test.about, d, req.expect)
 			}

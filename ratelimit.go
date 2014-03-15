@@ -63,16 +63,16 @@ func (tb *TokenBucket) Take(count int64) time.Duration {
 	return tb.take(time.Now(), count)
 }
 
-// TryTake takes up to count immediately available
+// TakeAvailable takes up to count immediately available
 // tokens from the bucket. It returns the number of tokens removed,
 // or zero if there are no available tokens. It does not block.
-func (tb *TokenBucket) TryTake(count int64) int64 {
-	return tb.tryTake(time.Now(), count)
+func (tb *TokenBucket) TakeAvailable(count int64) int64 {
+	return tb.takeAvailable(time.Now(), count)
 }
 
-// tryTake is the internal version of TryTake - it takes
+// takeAvailable is the internal version of TakeAvailable - it takes
 // the current time as an argument to enable easy testing.
-func (tb *TokenBucket) tryTake(now time.Time, count int64) int64 {
+func (tb *TokenBucket) takeAvailable(now time.Time, count int64) int64 {
 	if count <= 0 {
 		return 0
 	}
