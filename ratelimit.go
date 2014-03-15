@@ -46,7 +46,7 @@ const rateMargin = 0.01
 // at high rates, the actual rate may be up to 1% different from the
 // specified rate.
 func NewBucketWithRate(rate float64, capacity int64) *Bucket {
-	for quantum := int64(1); quantum < 1<<62; quantum *= 2 {
+	for quantum := int64(1); quantum < 1<<50; quantum = nextQuantum(quantum) {
 		fillInterval := time.Duration(1e9 * float64(quantum) / rate)
 		if fillInterval <= 0 {
 			continue
@@ -57,6 +57,17 @@ func NewBucketWithRate(rate float64, capacity int64) *Bucket {
 		}
 	}
 	panic("cannot find suitable quantum for " + strconv.FormatFloat(rate, 'g', -1, 64))
+}
+
+// nextQuantum returns the next quantum to try after q.
+// We grow the quantum exponentially, but slowly, so we
+// get a good fit in the lower numbers.
+func nextQuantum(q int64) int64 {
+	q1 := q * 11 / 10
+	if q1 == q {
+		q1++
+	}
+	return q1
 }
 
 // newBucketWithQuantum is similar to NewBucket, but allows

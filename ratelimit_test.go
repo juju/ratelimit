@@ -271,7 +271,6 @@ func checkRate(c *gc.C, rate float64) {
 	// asking for a not-quite multiple of the bucket's
 	// quantum and checking that the wait time
 	// correct.
-
 	d = tb.take(tb.startTime, tb.quantum*2-tb.quantum/2)
 	expectTime := 1e9 * float64(tb.quantum) * 2 / rate
 	if !isCloseTo(float64(d), expectTime, rateMargin) {
@@ -280,10 +279,8 @@ func checkRate(c *gc.C, rate float64) {
 }
 
 func (rateLimitSuite) TestNewWithRate(c *gc.C) {
-	if !testing.Short() {
-		for rate := float64(1); rate < 1e6; rate += 2 {
-			checkRate(c, rate)
-		}
+	for rate := float64(1); rate < 1e6; rate += 7 {
+		checkRate(c, rate)
 	}
 	for _, rate := range []float64{
 		1024 * 1024 * 1024,
