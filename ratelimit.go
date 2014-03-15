@@ -25,6 +25,8 @@ type Bucket struct {
 
 	// avail holds the number of available tokens
 	// in the bucket, as of availTick ticks from startTime.
+	// It will be negative when there are consumers
+	// waiting for tokens.
 	avail     int64
 	availTick int64
 }
