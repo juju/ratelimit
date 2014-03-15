@@ -1,8 +1,10 @@
+// +build ignore
 
 type Reader struct {
 	r io.Reader
 	flow byteFlow
 }
+
 
 // NewReader returns a reader that is rate limited by
 // the given token bucket. Each token in the bucket

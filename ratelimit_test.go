@@ -239,3 +239,18 @@ func (rateLimitSuite) TestPanics(c *gc.C) {
 	c.Assert(func() { New(1, 0) }, gc.PanicMatches, "token bucket capacity is not > 0")
 	c.Assert(func() { New(1, -2) }, gc.PanicMatches, "token bucket capacity is not > 0")
 }
+
+func isCloseTo(x, y float64) bool {
+	return abs(x - y) / y < 0.0001
+}
+
+func (rateLimitSuite) TestRate(c *gc.C) {
+	tb := New(1, 1)
+	if !isCloseTo(tb.Rate(), 1e9) {
+		c.Fatalf("got %v want 1e9", tb.Rate())
+	}
+	tb = New(2 * time.Second, 1)
+	if !isCloseTo(tb.Rate(), 0.5) {
+		c.Fatalf("got %v want 0.5", tb.Rate())
+	}
+}

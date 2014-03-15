@@ -20,6 +20,7 @@ type TokenBucket struct {
 	mu           sync.Mutex
 	startTime    time.Time
 	capacity     int64
+	quantum int64
 	fillInterval time.Duration
 	availTick    int64
 	avail        int64
@@ -30,19 +31,55 @@ type TokenBucket struct {
 // maximum capacity. Both arguments must be
 // positive. The bucket is initially full.
 func New(fillInterval time.Duration, capacity int64) *TokenBucket {
+	return newWithQuantum(fillInterval, capacity, 1)
+}
+
+// rateMargin specifes the allowed variance of actual
+// rate from specified rate. 1% seems reasonable.
+const rateMargin = 0.01
+
+// NewRate returns a token bucket that fills the bucket
+// at the rate of rate tokens per second up to the given
+// maximum capacity. Because of limited clock resolution,
+// at high rates, the actual rate may be up to 1% different from the
+// specified rate.
+func NewWithRate(rate float64, capacity int64) *TokenBucket {
+	for quantum := int64(1); quantum < 1<<62; quantum *= 2 {
+		fillInterval := time.Duration(1e9 * float64(quantum) / rate)
+		tb := newWithQuantum(fillInterval, capacity, quantum)
+		if diff := abs(tb.Rate() - rate); diff / rate <= rateMargin {
+			return tb
+		}
+	}
+	panic("cannot find suitable quantum")
+}
+
+func abs(f float64) float64 {
+	if f < 0 {
+		return -f
+	}
+	return f
+}
+
+func newWithQuantum(fillInterval time.Duration, capacity, quantum int64) *TokenBucket {
 	if fillInterval <= 0 {
 		panic("token bucket fill interval is not > 0")
 	}
 	if capacity <= 0 {
 		panic("token bucket capacity is not > 0")
 	}
+	if quantum <= 0 {
+		panic("token bucket quantum is not > 0")
+	}
 	return &TokenBucket{
 		startTime:    time.Now(),
 		capacity:     capacity,
+		quantum: quantum,
 		avail:        capacity,
 		fillInterval: fillInterval,
 	}
 }
+
 
 // Wait takes count tokens from the bucket,
 // waiting until they are available.
@@ -90,6 +127,12 @@ func (tb *TokenBucket) takeAvailable(now time.Time, count int64) int64 {
 	return count
 }
 
+// Rate returns the fill rate of the bucket, in
+// tokens per second.
+func (tb *TokenBucket) Rate() float64 {
+	return 1e9 * float64(tb.quantum) / float64(tb.fillInterval)
+}
+
 // take is the internal version of Take - it takes
 // the current time as an argument to enable easy testing.
 func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
@@ -104,7 +147,10 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	if tb.avail >= 0 {
 		return 0
 	}
-	endTick := currentTick + (-tb.avail + tb.quantum + 1) / tb.quantum
+	// Round up the missing tokens to the nearest multiple
+	// of quantum - the tokens won't be available until
+	// that tick.
+	endTick := currentTick + (-tb.avail + tb.quantum - 1) / tb.quantum
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
 	return endTime.Sub(now)
 }
