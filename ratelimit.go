@@ -6,6 +6,7 @@
 package ratelimit
 
 import (
+	"strconv"
 	"sync"
 	"time"
 )
@@ -20,7 +21,7 @@ type TokenBucket struct {
 	mu           sync.Mutex
 	startTime    time.Time
 	capacity     int64
-	quantum int64
+	quantum      int64
 	fillInterval time.Duration
 	availTick    int64
 	avail        int64
@@ -46,12 +47,15 @@ const rateMargin = 0.01
 func NewWithRate(rate float64, capacity int64) *TokenBucket {
 	for quantum := int64(1); quantum < 1<<62; quantum *= 2 {
 		fillInterval := time.Duration(1e9 * float64(quantum) / rate)
+		if fillInterval <= 0 {
+			continue
+		}
 		tb := newWithQuantum(fillInterval, capacity, quantum)
-		if diff := abs(tb.Rate() - rate); diff / rate <= rateMargin {
+		if diff := abs(tb.Rate() - rate); diff/rate <= rateMargin {
 			return tb
 		}
 	}
-	panic("cannot find suitable quantum")
+	panic("cannot find suitable quantum for " + strconv.FormatFloat(rate, 'g', -1, 64))
 }
 
 func abs(f float64) float64 {
@@ -74,12 +78,11 @@ func newWithQuantum(fillInterval time.Duration, capacity, quantum int64) *TokenB
 	return &TokenBucket{
 		startTime:    time.Now(),
 		capacity:     capacity,
-		quantum: quantum,
+		quantum:      quantum,
 		avail:        capacity,
 		fillInterval: fillInterval,
 	}
 }
-
 
 // Wait takes count tokens from the bucket,
 // waiting until they are available.
@@ -150,7 +153,7 @@ func (tb *TokenBucket) take(now time.Time, count int64) time.Duration {
 	// Round up the missing tokens to the nearest multiple
 	// of quantum - the tokens won't be available until
 	// that tick.
-	endTick := currentTick + (-tb.avail + tb.quantum - 1) / tb.quantum
+	endTick := currentTick + (-tb.avail+tb.quantum-1)/tb.quantum
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
 	return endTime.Sub(now)
 }

@@ -240,17 +240,63 @@ func (rateLimitSuite) TestPanics(c *gc.C) {
 	c.Assert(func() { New(1, -2) }, gc.PanicMatches, "token bucket capacity is not > 0")
 }
 
-func isCloseTo(x, y float64) bool {
-	return abs(x - y) / y < 0.0001
+func isCloseTo(x, y, tolerance float64) bool {
+	return abs(x-y)/y < tolerance
 }
 
 func (rateLimitSuite) TestRate(c *gc.C) {
 	tb := New(1, 1)
-	if !isCloseTo(tb.Rate(), 1e9) {
+	if !isCloseTo(tb.Rate(), 1e9, 0.00001) {
 		c.Fatalf("got %v want 1e9", tb.Rate())
 	}
-	tb = New(2 * time.Second, 1)
-	if !isCloseTo(tb.Rate(), 0.5) {
+	tb = New(2*time.Second, 1)
+	if !isCloseTo(tb.Rate(), 0.5, 0.00001) {
 		c.Fatalf("got %v want 0.5", tb.Rate())
+	}
+	tb = newWithQuantum(100*time.Millisecond, 1, 5)
+	if !isCloseTo(tb.Rate(), 50, 0.00001) {
+		c.Fatalf("got %v want 50", tb.Rate())
+	}
+}
+
+func checkRate(c *gc.C, rate float64) {
+	tb := NewWithRate(rate, 1<<62)
+	if !isCloseTo(tb.Rate(), rate, rateMargin) {
+		c.Fatalf("got %g want %v", tb.Rate(), rate)
+	}
+	d := tb.take(tb.startTime, 1<<62)
+	c.Assert(d, gc.Equals, time.Duration(0))
+
+	// Check that the actual rate is as expected by
+	// asking for a not-quite multiple of the bucket's
+	// quantum and checking that the wait time
+	// correct.
+
+	d = tb.take(tb.startTime, tb.quantum*2-tb.quantum/2)
+	expectTime := 1e9 * float64(tb.quantum) * 2 / rate
+	if !isCloseTo(float64(d), expectTime, rateMargin) {
+		c.Fatalf("rate %g: got %g want %v", rate, float64(d), expectTime)
+	}
+}
+
+func (rateLimitSuite) TestNewWithRate(c *gc.C) {
+	if !testing.Short() {
+		for rate := float64(1); rate < 1e6; rate++ {
+			checkRate(c, rate)
+		}
+	}
+	for _, rate := range []float64{
+		1024 * 1024 * 1024,
+		1e-5,
+		0.9e-5,
+		0.5,
+		0.9,
+		0.9e8,
+		3e12,
+		4e18,
+	} {
+		checkRate(c, rate)
+		checkRate(c, rate/3)
+		checkRate(c, rate*1.3)
 	}
 }
