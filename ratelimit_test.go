@@ -300,3 +300,10 @@ func (rateLimitSuite) TestNewWithRate(c *gc.C) {
 		checkRate(c, rate*1.3)
 	}
 }
+
+func BenchmarkWait(b *testing.B) {
+	tb := New(1, 16*1024)
+	for i := b.N - 1; i >= 0; i-- {
+		tb.Wait(1)
+	}
+}
