@@ -104,6 +104,21 @@ func (tb *Bucket) Wait(count int64) {
 	}
 }
 
+// WaitMaxDuration is like Wait except that it will
+// only take tokens from the bucket if it needs to wait
+// for no greater than maxWait. It reports whether
+// any tokens have been removed from the bucket
+// If no tokens have been removed, it returns immediately.
+func (tb *Bucket) WaitMaxDuration(count int64, maxWait time.Duration) bool {
+	d, ok := tb.TakeMaxDuration(count, maxWait)
+	if d > 0 {
+		time.Sleep(d)
+	}
+	return ok
+}
+
+const infinityDuration time.Duration = 0x7fffffffffffffff
+
 // Take takes count tokens from the bucket without blocking. It returns
 // the time that the caller should wait until the tokens are actually
 // available.
@@ -111,7 +126,21 @@ func (tb *Bucket) Wait(count int64) {
 // Note that if the request is irrevocable - there is no way to return
 // tokens to the bucket once this method commits us to taking them.
 func (tb *Bucket) Take(count int64) time.Duration {
-	return tb.take(time.Now(), count)
+	d, _ := tb.take(time.Now(), count, infinityDuration)
+	return d
+}
+
+// TakeMaxDuration is like Take, except that
+// it will only take tokens from the bucket if the wait
+// time for the tokens is no greater than maxWait.
+//
+// If it would take longer than maxWait for the tokens
+// to become available, it does nothing and reports false,
+// otherwise it returns the time that the caller should
+// wait until the tokens are actually available, and reports
+// true.
+func (tb *Bucket) TakeMaxDuration(count int64, maxWait time.Duration) (time.Duration, bool) {
+	return tb.take(time.Now(), count, maxWait)
 }
 
 // TakeAvailable takes up to count immediately available tokens from the
@@ -148,24 +177,30 @@ func (tb *Bucket) Rate() float64 {
 
 // take is the internal version of Take - it takes the current time as
 // an argument to enable easy testing.
-func (tb *Bucket) take(now time.Time, count int64) time.Duration {
+func (tb *Bucket) take(now time.Time, count int64, maxWait time.Duration) (time.Duration, bool) {
 	if count <= 0 {
-		return 0
+		return 0, true
 	}
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
 
 	currentTick := tb.adjust(now)
-	tb.avail -= count
-	if tb.avail >= 0 {
-		return 0
+	avail := tb.avail - count
+	if avail >= 0 {
+		tb.avail = avail
+		return 0, true
 	}
 	// Round up the missing tokens to the nearest multiple
 	// of quantum - the tokens won't be available until
 	// that tick.
-	endTick := currentTick + (-tb.avail+tb.quantum-1)/tb.quantum
+	endTick := currentTick + (-avail+tb.quantum-1)/tb.quantum
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
-	return endTime.Sub(now)
+	waitTime := endTime.Sub(now)
+	if waitTime > maxWait {
+		return 0, false
+	}
+	tb.avail = avail
+	return waitTime, true
 }
 
 // adjust adjusts the current bucket capacity based on the current time.

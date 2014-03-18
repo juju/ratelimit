@@ -79,9 +79,31 @@ TakeAvailable takes up to count immediately available tokens from the bucket. It
 returns the number of tokens removed, or zero if there are no available tokens.
 It does not block.
 
+#### func (*Bucket) TakeMaxDuration
+
+```go
+func (tb *Bucket) TakeMaxDuration(count int64, maxWait time.Duration) (time.Duration, bool)
+```
+TakeMaxDuration is like Take, except that it will only take tokens from the
+bucket if the wait time for the tokens is no greater than maxWait.
+
+If it would take longer than maxWait for the tokens to become available, it does
+nothing and reports false, otherwise it returns the time that the caller should
+wait until the tokens are actually available, and reports true.
+
 #### func (*Bucket) Wait
 
 ```go
 func (tb *Bucket) Wait(count int64)
 ```
 Wait takes count tokens from the bucket, waiting until they are available.
+
+#### func (*Bucket) WaitMaxDuration
+
+```go
+func (tb *Bucket) WaitMaxDuration(count int64, maxWait time.Duration) bool
+```
+WaitMaxDuration is like Wait except that it will only take tokens from the
+bucket if it needs to wait for no greater than maxWait. It reports whether any
+tokens have been removed from the bucket If no tokens have been removed, it
+returns immediately.
