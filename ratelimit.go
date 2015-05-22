@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"math"
 )
 
 // Bucket represents a token bucket that fills at a predetermined rate.
@@ -55,7 +56,7 @@ func NewBucketWithRate(rate float64, capacity int64) *Bucket {
 			continue
 		}
 		tb := NewBucketWithQuantum(fillInterval, capacity, quantum)
-		if diff := abs(tb.Rate() - rate); diff/rate <= rateMargin {
+		if diff := math.Abs(tb.Rate() - rate); diff/rate <= rateMargin {
 			return tb
 		}
 	}
@@ -216,11 +217,4 @@ func (tb *Bucket) adjust(now time.Time) (currentTick int64) {
 	}
 	tb.availTick = currentTick
 	return
-}
-
-func abs(f float64) float64 {
-	if f < 0 {
-		return -f
-	}
-	return f
 }
