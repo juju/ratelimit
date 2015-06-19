@@ -2,7 +2,8 @@
 // Licensed under the LGPLv3 with static-linking exception.
 // See LICENCE file for details.
 
-// The ratelimit package provides an efficient token bucket implementation.
+// The ratelimit package provides an efficient token bucket implementation
+// that can be used to limit the rate of arbitrary things.
 // See http://en.wikipedia.org/wiki/Token_bucket.
 package ratelimit
 
