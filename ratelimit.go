@@ -171,10 +171,12 @@ func (tb *Bucket) takeAvailable(now time.Time, count int64) int64 {
 	return count
 }
 
-// Available returns the number of available tokens.
-// It will be negative when there are consumers waiting for tokens.
-// Note that this method is inherently racy - the returned count
-// may not be current but a moment later.
+// Available returns the number of available tokens. It will be negative
+// when there are consumers waiting for tokens. Note that if this
+// returns greater than zero, it does not guarantee that calls that take
+// tokens from the buffer will succeed, as the number of available
+// tokens could have changed in the meantime. This method is intended
+// primarily for metrics reporting and debugging.
 func (tb *Bucket) Available() int64 {
 	return tb.available(time.Now())
 }
