@@ -158,16 +158,17 @@ func (tb *Bucket) takeAvailable(now time.Time, count int64) int64 {
 		return 0
 	}
 	tb.mu.Lock()
-	defer tb.mu.Unlock()
 
 	tb.adjust(now)
 	if tb.avail <= 0 {
+		tb.mu.Unlock()
 		return 0
 	}
 	if count > tb.avail {
 		count = tb.avail
 	}
 	tb.avail -= count
+	tb.mu.Unlock()
 	return count
 }
 
@@ -185,9 +186,10 @@ func (tb *Bucket) Available() int64 {
 // an argument to enable easy testing.
 func (tb *Bucket) available(now time.Time) int64 {
 	tb.mu.Lock()
-	defer tb.mu.Unlock()
 	tb.adjust(now)
-	return tb.avail
+	avail := tb.avail
+	tb.mu.Unlock()
+	return avail
 }
 
 // Capacity returns the capacity that the bucket was created with.
@@ -207,12 +209,12 @@ func (tb *Bucket) take(now time.Time, count int64, maxWait time.Duration) (time.
 		return 0, true
 	}
 	tb.mu.Lock()
-	defer tb.mu.Unlock()
 
 	currentTick := tb.adjust(now)
 	avail := tb.avail - count
 	if avail >= 0 {
 		tb.avail = avail
+		tb.mu.Unlock()
 		return 0, true
 	}
 	// Round up the missing tokens to the nearest multiple
@@ -222,9 +224,11 @@ func (tb *Bucket) take(now time.Time, count int64, maxWait time.Duration) (time.
 	endTime := tb.startTime.Add(time.Duration(endTick) * tb.fillInterval)
 	waitTime := endTime.Sub(now)
 	if waitTime > maxWait {
+		tb.mu.Unlock()
 		return 0, false
 	}
 	tb.avail = avail
+	tb.mu.Unlock()
 	return waitTime, true
 }
 

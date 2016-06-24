@@ -387,3 +387,12 @@ func BenchmarkWait(b *testing.B) {
 		tb.Wait(1)
 	}
 }
+
+func BenchmarkWaitParallel(b *testing.B) {
+	tb := NewBucket(1, 16*1024)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			tb.Wait(1)
+		}
+	})
+}
