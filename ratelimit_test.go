@@ -387,3 +387,9 @@ func BenchmarkWait(b *testing.B) {
 		tb.Wait(1)
 	}
 }
+
+func BenchmarkNewBucket(b *testing.B) {
+	for i := b.N - 1; i >= 0; i-- {
+		NewBucketWithRate(4e18, 1<<62)
+	}
+}
