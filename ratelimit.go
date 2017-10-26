@@ -83,12 +83,16 @@ func NewBucketWithRate(rate float64, capacity int64) *Bucket {
 // NewBucketWithRateAndClock is identical to NewBucketWithRate but injects a
 // testable clock interface.
 func NewBucketWithRateAndClock(rate float64, capacity int64, clock Clock) *Bucket {
+	// Use the same bucket each time through the loop
+	// to save allocations.
+	tb := NewBucketWithQuantumAndClock(1, capacity, 1, clock)
 	for quantum := int64(1); quantum < 1<<50; quantum = nextQuantum(quantum) {
 		fillInterval := time.Duration(1e9 * float64(quantum) / rate)
 		if fillInterval <= 0 {
 			continue
 		}
-		tb := NewBucketWithQuantumAndClock(fillInterval, capacity, quantum, clock)
+		tb.fillInterval = fillInterval
+		tb.quantum = quantum
 		if diff := math.Abs(tb.Rate() - rate); diff/rate <= rateMargin {
 			return tb
 		}
