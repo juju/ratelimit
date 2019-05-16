@@ -60,6 +60,18 @@ rate tokens per second up to the given maximum capacity. Because of limited
 clock resolution, at high rates, the actual rate may be up to 1% different from
 the specified rate.
 
+#### func (*Bucket) Available
+
+```go
+func (tb *Bucket) Available() int64
+```
+Available returns the number of available tokens. It will be negative
+when there are consumers waiting for tokens. Note that if this
+returns greater than zero, it does not guarantee that calls that take
+tokens from the buffer will succeed, as the number of available
+tokens could have changed in the meantime. This method is intended
+primarily for metrics reporting and debugging.
+
 #### func (*Bucket) Rate
 
 ```go
