@@ -382,6 +382,31 @@ func TestAvailable(t *testing.T) {
 
 }
 
+func TestNoBonusTokenAfterBucketIsFull(t *testing.T) {
+	tb := NewBucketWithQuantum(time.Second*1, 100, 20)
+	curAvail := tb.Available()
+	if curAvail != 100 {
+		t.Fatalf("initially: actual available = %d, expected = %d", curAvail, 100)
+	}
+
+	time.Sleep(time.Second * 5)
+
+	curAvail = tb.Available()
+	if curAvail != 100 {
+		t.Fatalf("after pause: actual available = %d, expected = %d", curAvail, 100)
+	}
+
+	cnt := tb.TakeAvailable(100)
+	if cnt != 100 {
+		t.Fatalf("taking: actual taken count = %d, expected = %d", cnt, 100)
+	}
+
+	curAvail = tb.Available()
+	if curAvail != 0 {
+		t.Fatalf("after taken: actual available = %d, expected = %d", curAvail, 0)
+	}
+}
+
 func BenchmarkWait(b *testing.B) {
 	tb := NewBucket(1, 16*1024)
 	for i := b.N - 1; i >= 0; i-- {
