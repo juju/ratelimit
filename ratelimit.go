@@ -310,14 +310,15 @@ func (tb *Bucket) currentTick(now time.Time) int64 {
 // available in the bucket at the given time, which must
 // be in the future (positive) with respect to tb.latestTick.
 func (tb *Bucket) adjustavailableTokens(tick int64) {
+	lastTick := tb.latestTick
+	tb.latestTick = tick
 	if tb.availableTokens >= tb.capacity {
 		return
 	}
-	tb.availableTokens += (tick - tb.latestTick) * tb.quantum
+	tb.availableTokens += (tick - lastTick) * tb.quantum
 	if tb.availableTokens > tb.capacity {
 		tb.availableTokens = tb.capacity
 	}
-	tb.latestTick = tick
 	return
 }
 
