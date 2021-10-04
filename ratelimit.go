@@ -165,7 +165,7 @@ func NewBucketWithQuantumAndClock(fillInterval time.Duration, capacity, quantum 
 }
 
 // Wait takes count tokens from the bucket, waiting until they are
-// available.
+// available. This is a blocking method.
 func (tb *Bucket) Wait(count int64) {
 	if d := tb.Take(count); d > 0 {
 		tb.clock.Sleep(d)
@@ -177,6 +177,7 @@ func (tb *Bucket) Wait(count int64) {
 // for no greater than maxWait. It reports whether
 // any tokens have been removed from the bucket
 // If no tokens have been removed, it returns immediately.
+// If maxWait is zero, rate limit strategy is veto.
 func (tb *Bucket) WaitMaxDuration(count int64, maxWait time.Duration) bool {
 	d, ok := tb.TakeMaxDuration(count, maxWait)
 	if d > 0 {
@@ -193,6 +194,8 @@ const infinityDuration time.Duration = 0x7fffffffffffffff
 //
 // Note that if the request is irrevocable - there is no way to return
 // tokens to the bucket once this method commits us to taking them.
+//
+// Deprecated: Request is irrevocable, wait and fetch token not atomic, this method is dangerous.
 func (tb *Bucket) Take(count int64) time.Duration {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
@@ -209,6 +212,8 @@ func (tb *Bucket) Take(count int64) time.Duration {
 // otherwise it returns the time that the caller should
 // wait until the tokens are actually available, and reports
 // true.
+//
+// Deprecated: Request is irrevocable, wait and fetch token not atomic, this method is dangerous.
 func (tb *Bucket) TakeMaxDuration(count int64, maxWait time.Duration) (time.Duration, bool) {
 	tb.mu.Lock()
 	defer tb.mu.Unlock()
