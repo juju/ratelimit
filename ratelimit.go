@@ -265,6 +265,13 @@ func (tb *Bucket) Capacity() int64 {
 	return tb.capacity
 }
 
+// ModifyCapacity modify current bucket capacity.
+func (tb *Bucket) ModifyCapacity(newCapacity int64) {
+	tb.mu.Lock()
+	defer tb.mu.Unlock()
+	tb.capacity = newCapacity
+}
+
 // Rate returns the fill rate of the bucket, in tokens per second.
 func (tb *Bucket) Rate() float64 {
 	return 1e9 * float64(tb.quantum) / float64(tb.fillInterval)
